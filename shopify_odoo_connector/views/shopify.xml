@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <record model="ir.ui.view" id="tree_view_shopify">
+            <field name="name">Shopify Configuration List</field>
+            <field name="model">shopify.configuration</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="name"/>
+                    <field name="shop_name"/>
+                    <field name="version"/>
+                    <field name="last_synced"/>
+                    <field name="state"/>
+                    <button type="object" name="sync_shopify_all" class="oe_highlight" string="Sync All"
+                            attrs="{'invisible': [('state', '=', 'new')]}"/>
+                </tree>
+            </field>
+        </record>
+
+
+        <record model="ir.ui.view" id="form_view_shopify">
+            <field name="name">Shopify Configuration Form</field>
+            <field name="model">shopify.configuration</field>
+            <field name="arch" type="xml">
+                <form string="Shopify Configuration Form">
+                    <header>
+                        <button type="object" name="sync_shopify" class="oe_highlight" string="Connect"
+                                attrs="{'invisible': [('state', '=', 'sync')]}"/>
+                        <field name="state" widget="statusbar"/>
+                    </header>
+
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="Instance Name"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <field name="con_endpoint"/>
+                            <field name="consumer_key" password="True"/>
+                            <field name="consumer_secret" password="True"/>
+                        </group>
+                        <group>
+                            <field name="shop_name" placeholder="eg:- store_name.myshopify.com"/>
+                            <field name="version"/>
+                        </group>
+                        <notebook>
+                            <page string="Import">
+                                <group>
+                                    <field name="import_product" widget="boolean_toggle"/>
+                                </group>
+                                <group>
+                                    <field name="import_customer" widget="boolean_toggle"/>
+                                </group>
+                                <group>
+                                    <field name="import_order" widget="boolean_toggle"/>
+                                </group>
+                            </page>
+                            <page string="Webhooks">
+                                <label for="webhook_product"/>
+                                <div class="o_row" name="webhook">
+
+                                    <field name="webhook_product" placeholder="Domain name"/>
+                                    <span>/products</span>
+                                </div>
+
+                                <label for="webhook_customer"/>
+                                <div class="o_row" name="webhook">
+                                    <field name="webhook_customer" placeholder="Domain name"/>
+                                    <span>/customers</span>
+                                </div>
+                                <label for="webhook_order"/>
+                                <div class="o_row" name="webhook">
+                                    <field name="webhook_order" placeholder="Domain name"/>
+                                    <span>/orders</span>
+                                </div>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <record model="ir.actions.act_window" id="action_shopify_configuration">
+            <field name="name">Shopify</field>
+            <field name="res_model">shopify.configuration</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+        <record id="product_template_inherit_shopify" model="ir.ui.view">
+            <field name="name">product.template.inherit</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_form_view"/>
+
+            <field name="arch" type="xml">
+                <xpath expr="//sheet" position="before">
+                    <header>
+                        <button type="object" name="sync_shopify_product" class="oe_highlight" string="Sync "
+                                attrs="{'invisible': [('shopify_instance', '=', False)]}"/>
+                    </header>
+                </xpath>
+                <xpath expr="//page[@name='sales']" position="after">
+                    <page string="Shopify" name="shopify">
+                        <label for="shopify_instance"/>
+                        <field name="shopify_instance"/>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="base_view_partner_form_shopify" model="ir.ui.view">
+            <field name="name">res.partner.form</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//sheet" position="before">
+                    <header>
+                        <button type="object" name="sync_shopify_customer" class="oe_highlight" string="Sync"
+                                attrs="{'invisible': [('shopify_ins', '=', False)]}"/>
+                    </header>
+                </xpath>
+                <xpath expr="//page[@name='sales_purchases']" position="after">
+                    <page string="Shopify" name="shopify">
+                        <label for="shopify_ins"/>
+                        <field name="shopify_ins"/>
+                    </page>
+
+                </xpath>
+            </field>
+        </record>
+        <record id="sale_order_view_form_shopify" model="ir.ui.view">
+            <field name="name">sale.order.form.inherit</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
+            <field name="priority">10</field>
+            <field name="arch" type="xml">
+                <xpath expr="//header" position="inside">
+                    <button type="object" name="sync_shopify_order" class="oe_highlight" string="Sync"
+                            attrs="{'invisible': [('shopify_instance', '=', False)]}"/>
+
+                </xpath>
+                <xpath expr="//field[@name='payment_term_id']" position='after'>
+                    <field name="shopify_instance" attrs="{'readonly': [('state', 'not in', ['draft'])]}"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="action_shopify_orders" model="ir.actions.act_window">
+            <field name="name">Shopify Orders</field>
+            <field name="res_model">sale.order</field>
+            <field name="domain">[('shopify_order_id', '!=', False)]</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+            <field name="view_id" ref="sale.view_order_tree"/>
+            <field name="context">{'create': False}</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_empty_folder">
+                    No orders found
+                </p>
+            </field>
+        </record>
+
+        <menuitem name="Shopify" id="shopify_menu_root"/>
+        <menuitem name="Configuration" id="shopify_configuration_menu" parent="shopify_menu_root"
+                  action="action_shopify_configuration"/>
+        <menuitem name="Shopify Orders" id="shopify_orders_menu" parent="sale.sale_order_menu" sequence="3"
+                  action="action_shopify_orders"/>
+    </data>
+</odoo>
